@@ -81,12 +81,12 @@ library(knitr) #make table
 gs4_deauth()
 
 #URL of the Google Sheet so that it is available to anyone
-googlesheet_url <- "https://docs.google.com/spreadsheets/d/1VpTn7voQ0889RoEloQtZFyVJyPMIRbACklrrquOiC7c/edit?usp=sharing"
+googlesheet_url <- "https://docs.google.com/spreadsheets/d/1u14lKzqxOS3QofUmpfmVJ3RpYHt1jMNrFTxg_J5v4Qc/edit?usp=sharing"
 ```
 
 
 ## Accessing Data From Google Sheets
 ```{r accessing_sheets}
- <- read_sheet(googlesheet_url, sheet = " ")
- <- read_sheet(googlesheet_url, sheet = " ")
+ Diversity <- read_sheet(googlesheet_url, sheet = "diversity")
+ Charcoal <- read_sheet(googlesheet_url, sheet = "charcoal")
 ```

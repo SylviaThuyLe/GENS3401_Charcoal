@@ -33,28 +33,6 @@ p.caption {
 Ben Phiplip
 
 
-
-# **INTRODUCTION**
-
-## Background  
-
-
-
-## Research Question   
-
-
-
-## Hypothesis   
-
-
-
-
-## Prediction   
-
-
-
-
-
 # **MATERIALS & METHODS** 
 ## Set Chunk Options
 Formatted display of content from .md file on GitHub site.
@@ -87,8 +65,9 @@ googlesheet_url <- "https://docs.google.com/spreadsheets/d/1u14lKzqxOS3QofUmpfmV
 
 ## Accessing Data From Google Sheets
 ```{r accessing_sheets}
- Diversity <- read_sheet(googlesheet_url, sheet = "diversity")
- Charcoal <- read_sheet(googlesheet_url, sheet = "charcoal")
+Diversity <- read_sheet(googlesheet_url, sheet = "Tree_diversity")
+Charcoal_q <- read_sheet(googlesheet_url, sheet = "Charcoal_quantity")
+Charcoal_d <- read_sheet(googlesheet_url, sheet = "Charcoal_determinated")
 ```
 
 

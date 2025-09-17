@@ -31,12 +31,10 @@ p.caption {
 
 # **ACKNOWLEDGEMENTS** {-}
 Ben Phiplip
-
+Elizabeth Stregger (data coding)
 
 # **MATERIALS & METHODS** 
 ## Set Chunk Options
-Formatted display of content from .md file on GitHub site.
-Upon knitr figures will be saved to 'Figs/'.
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(warning = FALSE, error = FALSE, message = FALSE)
 knitr::opts_chunk$set(fig.path='Figs/')
@@ -49,12 +47,11 @@ library(googledrive) #access to Google Drive
 library(googlesheets4) #access to Google Sheets
 library(lubridate) #tidyverse handling dates & times
 library(knitr) #make table
+library(vegan) #shannon diversity calculation
 ```
 
 ## Connect to Google Account
 ```{r connect_google}
-#Instead of sending a token, Google Sheets4 will send an API key. This can be used to access public resources for which no Google sign-in is required.
-
 # Deauthorize to access public sheets
 gs4_deauth()
 
@@ -69,6 +66,26 @@ Diversity <- read_sheet(googlesheet_url, sheet = "Tree_diversity")
 Charcoal_q <- read_sheet(googlesheet_url, sheet = "Charcoal_quantity")
 Charcoal_d <- read_sheet(googlesheet_url, sheet = "Charcoal_determinated")
 ```
+
+
+## Data Dictionary 
+```{r data_dictionary}
+DataDictionary <- read_sheet(googlesheet_url, sheet = "Data_dictionary")
+kable(DataDictionary)
+```
+
+
+
+# **RESULTS**
+## Diversity Calculation by Shannon Diversity Index
+```{r shannon_diversity}
+
+```
+
+
+
+
+
 
 
 

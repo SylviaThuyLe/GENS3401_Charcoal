@@ -79,7 +79,30 @@ kable(DataDictionary)
 # **RESULTS**
 ## Diversity Calculation by Shannon Diversity Index
 ```{r shannon_diversity}
-
+data(BCI, BCI.env)
+H <- diversity(BCI)
+simp <- diversity(BCI, "simpson")
+invsimp <- diversity(BCI, "inv")
+## Unbiased Simpson
+unbias.simp <- simpson.unb(BCI)
+## Fisher alpha
+alpha <- fisher.alpha(BCI)
+## Plot all
+pairs(cbind(H, simp, invsimp, unbias.simp, alpha), pch="+", col="blue")
+## Species richness (S) and Pielou's evenness (J):
+S <- specnumber(BCI) ## rowSums(BCI > 0) does the same...
+J <- H/log(S)
+## beta diversity defined as gamma/alpha - 1:
+## alpha is the average no. of species in a group, and gamma is the
+## total number of species in the group
+(alpha <- with(BCI.env, tapply(specnumber(BCI), Habitat, mean)))
+(gamma <- with(BCI.env, specnumber(BCI, Habitat)))
+gamma/alpha - 1
+## similar calculations with Shannon diversity
+(alpha <- with(BCI.env, tapply(diversity(BCI), Habitat, mean))) # average
+(gamma <- with(BCI.env, diversity(BCI, groups=Habitat))) # pooled
+## additive beta diversity based on Shannon index
+gamma-alpha
 ```
 
 

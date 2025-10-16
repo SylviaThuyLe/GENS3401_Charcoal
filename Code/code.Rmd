@@ -24,11 +24,6 @@ p.caption {
 }
 ```
 
-# **AFFILIATIONS** {-}
-^1^Mount Allison University, New Brunswick, Canada  
-* corresponding author
-
-
 # **ACKNOWLEDGEMENTS** {-}
 Ben Phiplip
 Elizabeth Stregger (data coding)
@@ -63,9 +58,9 @@ googlesheet_url <- "https://docs.google.com/spreadsheets/d/1u14lKzqxOS3QofUmpfmV
 
 ## Accessing Data From Google Sheets
 ```{r accessing_sheets}
-Diversity <- read_sheet(googlesheet_url, sheet = "Tree_diversity")
-Charcoal_q <- read_sheet(googlesheet_url, sheet = "Charcoal_quantity")
-Charcoal_d <- read_sheet(googlesheet_url, sheet = "Charcoal_determinated")
+Diversity <- read_sheet(googlesheet_url, sheet = "Diversity")
+Meter <- read_sheet(googlesheet_url, sheet = "Meter_Info")
+ID <- read_sheet(googlesheet_url, sheet = "Tree_ID")
 ```
 
 

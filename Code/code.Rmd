@@ -74,37 +74,110 @@ kable(DataDictionary)
 
 # **RESULTS**
 ## Diversity Calculation by Shannon Diversity Index
-```{r shannon_diversity}
-data(Diversity)
-H <- diversity(Diversity)
-simp <- diversity(BCI, "simpson")
-invsimp <- diversity(BCI, "inv")
-## Unbiased Simpson
-unbias.simp <- simpson.unb(BCI)
-## Fisher alpha
-alpha <- fisher.alpha(BCI)
-## Plot all
-pairs(cbind(H, simp, invsimp, unbias.simp, alpha), pch="+", col="blue")
-## Species richness (S) and Pielou's evenness (J):
-S <- specnumber(BCI) ## rowSums(BCI > 0) does the same...
-J <- H/log(S)
-## beta diversity defined as gamma/alpha - 1:
-## alpha is the average no. of species in a group, and gamma is the
-## total number of species in the group
-(alpha <- with(BCI.env, tapply(specnumber(BCI), Habitat, mean)))
-(gamma <- with(BCI.env, specnumber(BCI, Habitat)))
-gamma/alpha - 1
-## similar calculations with Shannon diversity
-(alpha <- with(BCI.env, tapply(diversity(BCI), Habitat, mean))) # average
-(gamma <- with(BCI.env, diversity(BCI, groups=Habitat))) # pooled
-## additive beta diversity based on Shannon indexs
-gamma-alpha
-#########################
-diversity(Diversity, shannon = "shannon", groups, equalize.groups = FALSE,
-   MARGIN = 1, base = exp(1))
-simpson.unb(Diversity, inverse = FALSE)
-fisher.alpha(Diversity, MARGIN = 1, ...)
-specnumber(Diversity, groups, MARGIN = 1)
+
+```{r Shanon Diversity}
+# 1) Clean and prepare data
+#    (expects a data frame `Diversity` with columns: Meter, Tree_species)
+# =========================
+diversity <- Diversity %>%
+  mutate(
+    meter = as.character(Meter),
+    # normalize species text
+    Tree_Species = str_squish(Tree_species),
+    Tree_Species = str_to_title(Tree_Species)
+  ) %>%
+  filter(!is.na(meter), !is.na(Tree_Species), Tree_Species != "")
+
+# ===========================================
+# 2) Count abundance and make community matrix
+# ===========================================
+counts <- diversity %>%
+  count(meter, Tree_Species, name = "abundance")
+
+comm_mat <- counts %>%
+  pivot_wider(
+    names_from  = Tree_Species,
+    values_from = abundance,
+    values_fill = 0
+  ) %>%
+  column_to_rownames("meter") %>%
+  as.matrix()
+# ---- Helper: unbiased Simpson for an abundance vector ----
+simpson_unbiased <- function(x) {
+  N <- sum(x)
+  if (N <= 1) return(NA_real_)
+  1 - sum(x * (x - 1)) / (N * (N - 1))
+}
+# ===========================
+# 3) OVERALL (pooled) indices
+# ===========================
+overall_counts      <- colSums(comm_mat)                      # totals per species
+overall_S           <- specnumber(overall_counts)             # richness
+overall_H           <- diversity(overall_counts, index = "shannon", base = exp(1))
+overall_evenness_J  <- as.numeric(overall_H / log(overall_S)) # Pielou J'
+overall_Simpson_u   <- simpson_unbiased(overall_counts)       # unbiased Simpson
+
+overall_summary <- tibble(
+  metric = c("Shannon_H", "Richness_S", "Evenness_J", "Simpson_unbiased"),
+  value  = c(overall_H, overall_S, overall_evenness_J, overall_Simpson_u)
+)
+
+# ==========================================
+# 4) DIVERSITY PER METER (Shannon + unbiased Simpson)
+# ==========================================
+H_per_meter         <- diversity(comm_mat, index = "shannon", base = exp(1))
+S_per_meter         <- specnumber(comm_mat, MARGIN = 1)
+J_per_meter         <- as.numeric(H_per_meter / log(pmax(S_per_meter, 1)))
+Simpson_u_per_meter <- apply(comm_mat, 1, simpson_unbiased)
+
+diversity_by_meter <- tibble(
+  meter                   = rownames(comm_mat),
+  Shannon_H               = as.numeric(H_per_meter),
+  Richness_S              = as.integer(S_per_meter),
+  Evenness_J              = J_per_meter,
+  Simpson_unbiased_cal    = as.numeric(Simpson_u_per_meter)
+) %>% arrange(as.numeric(meter))
+
+# ======================================================
+# 5) Species × meter: counts and proportions per meter
+# ======================================================
+species_by_meter_counts <- as_tibble(comm_mat, rownames = "meter")
+
+species_by_meter_props <- species_by_meter_counts %>%
+  mutate(total_at_meter = rowSums(across(-meter))) %>%
+  mutate(across(-c(meter, total_at_meter),
+                ~ ifelse(total_at_meter > 0, .x / total_at_meter, 0),
+                .names = "{.col}_prop"))
+
+# ============================================================
+# 6) “Spatial diversity” for each species across all meters
+#    (distribution of each species across meters)
+# ============================================================
+# Shannon spatial (meters as categories)
+spatial_Shannon_by_species <- apply(comm_mat, 2, function(x){
+  tot <- sum(x); if (tot == 0) return(NA_real_)
+  p <- x / tot
+  diversity(p, index = "shannon", base = exp(1))
+})
+
+# Unbiased Simpson spatial (using counts across meters)
+spatial_Simpson_u_by_species <- apply(comm_mat, 2, simpson_unbiased)
+
+species_spatial_summary <- tibble(
+  species                   = names(spatial_Shannon_by_species),
+  spatial_Shannon_H         = as.numeric(spatial_Shannon_by_species),
+  spatial_Simpson_unbiased  = as.numeric(spatial_Simpson_u_by_species),
+  total_abundance           = as.numeric(overall_counts)
+) %>% arrange(desc(total_abundance))
+
+# ===================
+# 7) View / export
+# ===================
+overall_summary                 # Overall site-level indices (Shannon + unbiased Simpson)
+diversity_by_meter              # Per-meter indices
+species_by_meter_counts         # Counts per species per meter
+species_by_meter_props          # Proportions per species per meter
+species_spatial_summary         # Spatial indices per species
 ```
 
 ## Histogram 

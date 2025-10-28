@@ -60,6 +60,7 @@ googlesheet_url <- "https://docs.google.com/spreadsheets/d/1u14lKzqxOS3QofUmpfmV
 ```{r accessing_sheets}
 Diversity <- read_sheet(googlesheet_url, sheet = "Diversity")
 Meter <- read_sheet(googlesheet_url, sheet = "Meter_Info")
+Quantity <- read_sheet(googlesheet_url, sheet = "Charcoal_quantity")
 ID <- read_sheet(googlesheet_url, sheet = "Tree_ID")
 ```
 
@@ -171,7 +172,7 @@ species_spatial_summary <- tibble(
 ) %>% arrange(desc(total_abundance))
 
 # ===================
-# 7) View / export
+# 7) View
 # ===================
 overall_summary                 # Overall site-level indices (Shannon + unbiased Simpson)
 diversity_by_meter              # Per-meter indices
@@ -179,6 +180,28 @@ species_by_meter_counts         # Counts per species per meter
 species_by_meter_props          # Proportions per species per meter
 species_spatial_summary         # Spatial indices per species
 ```
+
+## Bar graph 
+
+```{r charcoal per meter}
+colnames(Quantity) <- c("Meter", "Total_charcoal")
+
+# Create the bar plot
+ggplot(Quantity, aes(x = factor(Meter), y = Total_charcoal)) +
+  geom_bar(stat = "identity", fill = "#4C72B0", color = "black") +
+  labs(
+    title = "Total Charcoal Pieces by Meter",
+    x = "Meter (m)",
+    y = "Total Charcoal"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+```
+
+
 
 ## Histogram 
 ```{r}

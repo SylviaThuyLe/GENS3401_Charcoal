@@ -231,26 +231,70 @@ ggplot(PhysChem_combined) +
 ## Barplot 
 
 ```{r}
-ID_long <- ID %>%
-  pivot_longer(cols = c("Prelim_ID", "Pre_settlement"),
-               names_to = "Period",
-               values_to = "Species")
+# ---------- Present-day (species_by_meter_counts) ----------
+present_long <- species_by_meter_counts %>%
+  pivot_longer(-meter, names_to = "species_raw", values_to = "count") %>%
+  group_by(species_raw) %>%
+  summarise(count = sum(as.numeric(count), na.rm = TRUE), .groups = "drop") %>%
+  mutate(
+    species = case_when(
+      species_raw %in% c("Red Spruce","White Spruce","Spruce") ~ "Spruce",
+      species_raw %in% c("Yellow Birch","Paper Birch","Birch") ~ "Birch",
+      str_detect(species_raw, regex("ash", ignore_case = TRUE)) ~ "Ash",
+      str_detect(species_raw, regex("choke\\s*cherry|cherry", ignore_case = TRUE)) ~ "Choke Cherry",
+      TRUE ~ species_raw
+    ),
+    forest_type = "Present day"
+  ) %>%
+  group_by(species, forest_type) %>%
+  summarise(count = sum(count), .groups = "drop")
 
-# Count how many times each species appears per period
-species_count <- ID_long %>%
-  group_by(Period, Species) %>%
-  summarise(Count = n(), .groups = "drop")
+# ---------- Pre-settlement (ID$Prelim_ID) ----------
+pre_counts <- ID %>%
+  transmute(species_raw = str_to_title(str_squish(str_replace_all(Prelim_ID, "[^A-Za-z ]", " ")))) %>%
+  mutate(
+    species = case_when(
+      str_detect(species_raw, "Spruce") ~ "Spruce",
+      str_detect(species_raw, "Birch") ~ "Birch",
+      str_detect(species_raw, "Maple") ~ "Maple",
+      str_detect(species_raw, "Larch") ~ "Larch",
+      str_detect(species_raw, "Fir") ~ "Fir",
+      str_detect(species_raw, "Ash") ~ "Ash",
+      str_detect(species_raw, "Shadbush|Amelanchier") ~ "Shadbush",
+      str_detect(species_raw, "Cherry") ~ "Choke Cherry",
+      TRUE ~ species_raw
+    )
+  ) %>%
+  filter(!is.na(species) & species != "") %>%      
+  count(species, name = "count") %>%
+  mutate(forest_type = "Pre-settlement")
 
-# Create the bar graph
-ggplot(species_count, aes(x = Species, y = Count, fill = Period)) +
-  geom_bar(stat = "identity", position = "dodge") +
+# ---------- Combine, order, plot ----------
+plot_df <- bind_rows(present_long, pre_counts) %>%
+  group_by(species) %>%
+  mutate(total = sum(count)) %>%
+  ungroup() %>%
+  mutate(species = fct_reorder(species, total, .desc = TRUE))
+##
+#font_add("calibril", "C:/kyoshiinari/Downloads/calibril.ttf")
+## --- plot (no grid, legend right) ---
+ggplot(plot_df, aes(x = species, y = count, fill = forest_type)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
   labs(
-    title = "Comparison of Tree Species between Present-Day and Pre-Settlement Forests",
-    x = "Species",
-    y = "Count of Identified Occurrences",
-    fill = "Forest Period"
+    x = "Tree species",
+    y = "",
+    fill = ""
   ) +
-  theme_minimal(base_size = 14)
+  theme_minimal(base_size = 14) +
+  theme(
+    text = element_text(family = "sans", face = "plain"),  # uses Calibri-like clean font
+    legend.position = "right",
+    panel.grid = element_blank(),  # removes all gridlines
+    panel.border = element_blank(),
+    axis.line = element_line(color = "black"),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(face = "plain")
+  )
 ```
 
 

@@ -228,8 +228,30 @@ ggplot(PhysChem_combined) +
   )
 ```
 
+## Barplot 
 
+```{r}
+ID_long <- ID %>%
+  pivot_longer(cols = c("Prelim_ID", "Pre_settlement"),
+               names_to = "Period",
+               values_to = "Species")
 
+# Count how many times each species appears per period
+species_count <- ID_long %>%
+  group_by(Period, Species) %>%
+  summarise(Count = n(), .groups = "drop")
+
+# Create the bar graph
+ggplot(species_count, aes(x = Species, y = Count, fill = Period)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(
+    title = "Comparison of Tree Species between Present-Day and Pre-Settlement Forests",
+    x = "Species",
+    y = "Count of Identified Occurrences",
+    fill = "Forest Period"
+  ) +
+  theme_minimal(base_size = 14)
+```
 
 
 

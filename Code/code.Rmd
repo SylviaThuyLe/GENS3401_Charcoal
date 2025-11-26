@@ -297,6 +297,154 @@ ggplot(plot_df, aes(x = species, y = count, fill = forest_type)) +
   )
 ```
 
+```{r}
+## Counts of each taxon in the pre-settlement forest
+counts <- c(
+  Birch        = 34,
+  Beech        = 17,
+  Larch        = 1,
+  Spruce       = 8,
+  Canada_yew   = 4,
+  Pine         = 5,
+  White_pine   = 1
+)
 
+# Total individuals
+N <- sum(counts)
+
+# Relative abundances
+p <- counts / N
+
+# Species richness (S)
+richness <- length(counts)
+
+# Shannon diversity (natural log)
+shannon <- -sum(p * log(p))
+
+# Unbiased Simpson diversity:
+# lambda_unb = Σ n_i (n_i - 1) / [N (N - 1)]
+lambda_unb <- sum(counts * (counts - 1)) / (N * (N - 1))
+simpson_unbiased <- 1 - lambda_unb
+
+# Pielou’s evenness J = H / ln(S)
+evenness <- shannon / log(richness)
+
+# Put results in a small table
+div_results <- data.frame(
+  N_total          = N,
+  Richness_S       = richness,
+  Shannon_H        = shannon,
+  Simpson_unbiased = simpson_unbiased,
+  Evenness_Pielou  = evenness
+)
+
+print(div_results)
+
+```
+
+```{r}
+library(dplyr)
+
+### -----------------------------------------------------------
+### 1. Enter the final species counts
+### -----------------------------------------------------------
+
+# Present forest
+present <- c(
+  Red_spruce      = 65,
+  Yellow_birch    = 6,
+  Paper_birch     = 11,
+  Choke_cherry    = 2,
+  Mountain_ash    = 51,
+  Fir             = 4,
+  Speckled_alder  = 3
+)
+
+# Pre-settlement forest
+pre_settlement <- c(
+  Birch       = 34,
+  Beech       = 17,
+  Larch       = 1,
+  Spruce      = 8,
+  Canada_yew  = 4,
+  Pine        = 6
+)
+
+### -----------------------------------------------------------
+### 2. Diversity index functions
+### -----------------------------------------------------------
+
+# Shannon (natural log)
+shannon_fun <- function(x){
+  p <- x / sum(x)
+  -sum(p * log(p))
+}
+
+# Simpson (1 - D), unbiased estimator
+simpson_fun <- function(x){
+  N <- sum(x)
+  lambda_unb <- sum(x*(x-1)) / (N*(N-1))
+  1 - lambda_unb
+}
+
+# Pielou evenness J = H / ln(S)
+evenness_fun <- function(x){
+  H <- shannon_fun(x)
+  S <- length(x[x > 0])
+  H / log(S)
+}
+
+### -----------------------------------------------------------
+### 3. Calculate diversity indices for each forest
+### -----------------------------------------------------------
+
+results <- data.frame(
+  Forest      = c("Present", "Pre-settlement"),
+  Shannon     = c(shannon_fun(present), shannon_fun(pre_settlement)),
+  Simpson_1_D = c(simpson_fun(present), simpson_fun(pre_settlement)),
+  Evenness    = c(evenness_fun(present), evenness_fun(pre_settlement)),
+  Richness    = c(length(present), length(pre_settlement))
+)
+
+print(results)
+
+### -----------------------------------------------------------
+### 4. Permutation tests for significance
+### -----------------------------------------------------------
+
+perm_test <- function(x, y, index_fn, nperm = 9999){
+
+  obs_diff <- abs(index_fn(x) - index_fn(y))
+
+  pooled <- c(x, y)
+  nx <- length(x)
+
+  diffs <- numeric(nperm)
+
+  for(i in 1:nperm){
+    perm <- sample(pooled)
+    x_perm <- perm[1:nx]
+    y_perm <- perm[(nx+1):length(pooled)]
+
+    diffs[i] <- abs(index_fn(x_perm) - index_fn(y_perm))
+  }
+
+  p_value <- mean(diffs >= obs_diff)
+  return(p_value)
+}
+
+# Run permutation tests
+p_shannon <- perm_test(present, pre_settlement, shannon_fun)
+p_simpson <- perm_test(present, pre_settlement, simpson_fun)
+p_evenness <- perm_test(present, pre_settlement, evenness_fun)
+
+cat("\nPermutation test p-values:\n")
+cat("Shannon p =", p_shannon, "\n")
+cat("Simpson p =", p_simpson, "\n")
+cat("Evenness p =", p_evenness, "\n")
+
+
+
+```
 
 

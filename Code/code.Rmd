@@ -343,108 +343,213 @@ print(div_results)
 ```
 
 ```{r}
-library(dplyr)
-
-### -----------------------------------------------------------
-### 1. Enter the final species counts
-### -----------------------------------------------------------
-
-# Present forest
+## Species counts
 present <- c(
-  Red_spruce      = 65,
-  Yellow_birch    = 6,
-  Paper_birch     = 11,
-  Choke_cherry    = 2,
-  Mountain_ash    = 51,
-  Fir             = 4,
-  Speckled_alder  = 3
+  Birch = 17,
+  Beech = 0,
+  Larch = 0,
+  Spruce = 65,
+  Canada_yew = 0,
+  Pine = 0,
+  Choke_cherry = 2,
+  American_mountain_ash = 51,
+  Balsam_fir = 4,
+  Speckled_alder = 3
 )
 
-# Pre-settlement forest
 pre_settlement <- c(
-  Birch       = 34,
-  Beech       = 17,
-  Larch       = 1,
-  Spruce      = 8,
-  Canada_yew  = 4,
-  Pine        = 6
+  Birch = 29,
+  Beech = 13,
+  Larch = 3,
+  Spruce = 7,
+  Canada_yew = 4,
+  Pine = 19,
+  Choke_cherry = 1,
+  American_mountain_ash = 0,
+  Balsam_fir = 1,
+  Speckled_alder = 0
 )
 
-### -----------------------------------------------------------
-### 2. Diversity index functions
-### -----------------------------------------------------------
+## Functions for indices
 
-# Shannon (natural log)
-shannon_fun <- function(x){
+shannon_H <- function(x) {
+  x <- x[x > 0]
   p <- x / sum(x)
-  -sum(p * log(p))
+  -sum(p * log(p))          # natural log
 }
 
-# Simpson (1 - D), unbiased estimator
-simpson_fun <- function(x){
+simpson_unbiased <- function(x) {
+  x <- x[x > 0]
   N <- sum(x)
-  lambda_unb <- sum(x*(x-1)) / (N*(N-1))
-  1 - lambda_unb
+  1 - sum(x * (x - 1)) / (N * (N - 1))
 }
 
-# Pielou evenness J = H / ln(S)
-evenness_fun <- function(x){
-  H <- shannon_fun(x)
-  S <- length(x[x > 0])
+evenness_J <- function(x) {
+  S <- sum(x > 0)           # richness
+  H <- shannon_H(x)
   H / log(S)
 }
 
-### -----------------------------------------------------------
-### 3. Calculate diversity indices for each forest
-### -----------------------------------------------------------
+richness_S <- function(x) sum(x > 0)
 
-results <- data.frame(
-  Forest      = c("Present", "Pre-settlement"),
-  Shannon     = c(shannon_fun(present), shannon_fun(pre_settlement)),
-  Simpson_1_D = c(simpson_fun(present), simpson_fun(pre_settlement)),
-  Evenness    = c(evenness_fun(present), evenness_fun(pre_settlement)),
-  Richness    = c(length(present), length(pre_settlement))
+## Calculate for each forest
+
+present_results <- list(
+  N         = sum(present),
+  richness  = richness_S(present),
+  shannon   = shannon_H(present),
+  simpson_u = simpson_unbiased(present),
+  evenness  = evenness_J(present)
 )
 
-print(results)
+pre_settlement_results <- list(
+  N         = sum(pre_settlement),
+  richness  = richness_S(pre_settlement),
+  shannon   = shannon_H(pre_settlement),
+  simpson_u = simpson_unbiased(pre_settlement),
+  evenness  = evenness_J(pre_settlement)
+)
 
-### -----------------------------------------------------------
-### 4. Permutation tests for significance
-### -----------------------------------------------------------
+present_results
+pre_settlement_results
 
-perm_test <- function(x, y, index_fn, nperm = 9999){
+results <- rbind(
+  Present = unlist(present_results),
+  Pre_settlement = unlist(pre_settlement_results)
+)
 
-  obs_diff <- abs(index_fn(x) - index_fn(y))
-
-  pooled <- c(x, y)
-  nx <- length(x)
-
-  diffs <- numeric(nperm)
-
-  for(i in 1:nperm){
-    perm <- sample(pooled)
-    x_perm <- perm[1:nx]
-    y_perm <- perm[(nx+1):length(pooled)]
-
-    diffs[i] <- abs(index_fn(x_perm) - index_fn(y_perm))
-  }
-
-  p_value <- mean(diffs >= obs_diff)
-  return(p_value)
-}
-
-# Run permutation tests
-p_shannon <- perm_test(present, pre_settlement, shannon_fun)
-p_simpson <- perm_test(present, pre_settlement, simpson_fun)
-p_evenness <- perm_test(present, pre_settlement, evenness_fun)
-
-cat("\nPermutation test p-values:\n")
-cat("Shannon p =", p_shannon, "\n")
-cat("Simpson p =", p_simpson, "\n")
-cat("Evenness p =", p_evenness, "\n")
-
+results
 
 
 ```
 
+```{r}
+library(ecolTest)
+
+Hutcheson_t_test(present, pre_settlement)
+
+```
+
+```{r}
+## -----------------------------
+## 1. Data
+## -----------------------------
+present <- c(
+  Birch                  = 17,
+  Beech                  = 0,
+  Larch                  = 0,
+  Spruce                 = 65,
+  Canada_yew             = 0,
+  Pine                   = 0,
+  Choke_cherry           = 2,
+  American_mountain_ash  = 51,
+  Balsam_fir             = 4,
+  Speckled_alder         = 3
+)
+
+pre_settlement <- c(
+  Birch                  = 29,
+  Beech                  = 13,
+  Larch                  = 3,
+  Spruce                 = 7,
+  Canada_yew             = 4,
+  Pine                   = 19,
+  Choke_cherry           = 1,
+  American_mountain_ash  = 0,
+  Balsam_fir             = 1,
+  Speckled_alder         = 0
+)
+
+## -----------------------------
+## 2. Diversity functions
+## -----------------------------
+shannon_H <- function(x) {
+  x <- x[x > 0]
+  p <- x / sum(x)
+  -sum(p * log(p))   # natural log
+}
+
+simpson_unbiased <- function(x) {
+  x <- x[x > 0]
+  N <- sum(x)
+  1 - sum(x * (x - 1)) / (N * (N - 1))
+}
+
+evenness_J <- function(x) {
+  x <- x[x > 0]
+  S <- length(x)
+  H <- shannon_H(x)
+  H / log(S)
+}
+
+## -----------------------------
+## 3. Permutation test function
+## -----------------------------
+perm_diversity_test <- function(counts1, counts2, nperm = 9999, seed = 123) {
+  if (!is.null(seed)) set.seed(seed)
+
+  all_counts <- counts1 + counts2
+  species    <- rep(names(all_counts), times = all_counts)
+
+  N1 <- sum(counts1)
+  N2 <- sum(counts2)
+  Ntot <- N1 + N2
+
+  # observed values
+  H1_obs  <- shannon_H(counts1)
+  H2_obs  <- shannon_H(counts2)
+  S1_obs  <- simpson_unbiased(counts1)
+  S2_obs  <- simpson_unbiased(counts2)
+  E1_obs  <- evenness_J(counts1)
+  E2_obs  <- evenness_J(counts2)
+
+  dH_obs <- H1_obs - H2_obs
+  dS_obs <- S1_obs - S2_obs
+  dE_obs <- E1_obs - E2_obs
+
+  dH_perm <- numeric(nperm)
+  dS_perm <- numeric(nperm)
+  dE_perm <- numeric(nperm)
+
+  for (i in seq_len(nperm)) {
+    idx1 <- sample.int(Ntot, size = N1, replace = FALSE)
+    sp1  <- species[idx1]
+    sp2  <- species[-idx1]
+
+    tab1 <- table(sp1)
+    tab2 <- table(sp2)
+
+    # rebuild count vectors with same species order
+    c1 <- integer(length(all_counts)); names(c1) <- names(all_counts)
+    c2 <- integer(length(all_counts)); names(c2) <- names(all_counts)
+    c1[names(tab1)] <- as.vector(tab1)
+    c2[names(tab2)] <- as.vector(tab2)
+
+    dH_perm[i] <- shannon_H(c1)          - shannon_H(c2)
+    dS_perm[i] <- simpson_unbiased(c1)   - simpson_unbiased(c2)
+    dE_perm[i] <- evenness_J(c1)         - evenness_J(c2)
+  }
+
+  p_H <- mean(abs(dH_perm) >= abs(dH_obs))
+  p_S <- mean(abs(dS_perm) >= abs(dS_obs))
+  p_E <- mean(abs(dE_perm) >= abs(dE_obs))
+
+  list(
+    observed = list(
+      H_present  = H1_obs,  H_presettlement  = H2_obs,
+      Simpson_present = S1_obs, Simpson_presettlement = S2_obs,
+      Evenness_present = E1_obs, Evenness_presettlement = E2_obs
+    ),
+    diff_observed = c(Shannon = dH_obs, Simpson = dS_obs, Evenness = dE_obs),
+    p_values = c(Shannon = p_H, Simpson = p_S, Evenness = p_E)
+  )
+}
+
+## -----------------------------
+## 4. Run the permutation test
+## -----------------------------
+perm_results <- perm_diversity_test(present, pre_settlement, nperm = 9999)
+perm_results
+
+```
 
